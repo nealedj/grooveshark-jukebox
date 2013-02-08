@@ -10,13 +10,16 @@ app.configure(function(){
         var client = new pg.Client(dbConnString);
         client.connect();
 
-        res.json({
-            artistID: 386,
-            artistName: "Paul Oakenfold",
-            songID: 25417373,
-            songName: "Ready Steady Go"
+        query = client.query('SELECT artist_id, artist_name, song_id, song_name FROM song_queue');
+
+        query.on('row', function(row, result) {
+            result.addRow(row);
         });
-        res.end();
+
+        query.on('end', function(result){
+            res.json(result);
+            res.end();
+        });
     });
 
     app.get('/_setup_db', function(req, res){
