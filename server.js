@@ -24,9 +24,9 @@ app.configure(function(){
         client.connect();
         query = client.query('CREATE TABLE song_queue (' +
                                 'id bigserial primary key,' +
-                                'artist_id integer' +
-                                'artist_name varchar(150)' +
-                                'song_id integer' +
+                                'artist_id integer,' +
+                                'artist_name varchar(150),' +
+                                'song_id integer,' +
                                 'song_name varchar(150)' +
                                 ');');
         query.on('end', function() {
