@@ -1,35 +1,81 @@
-document.write('<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/underscore.js/1.4.4/underscore-min.js"></script>');
-document.write('<script type="text/javascript" src="//cdnjs.cloudflare.com/ajax/libs/backbone.js/0.9.10/backbone-min.js"></script>');
 
 (function ($) {
-
     Song = Backbone.Model.extend({
-        name: null
+        id: null,
+        artist_id: null,
+        artist_name: null,
+        song_id: null,
+        song_name: null
+
     });
 
     Playlist = Backbone.Collection.extend({
-        initialize: function (models, options) {
-            this.bind("add", options.view.songAdded);
-        }
+        url: 'http://localhost:8000/song_queue'
     });
 
     AppView = Backbone.View.extend({
+
         el: $("#sidebar"),
+        pollFrequency: 8000,
         initialize: function () {
-            this.$el.html( "<button id='addSong'>Add Song</button>");
+            this.$el.html( "<h1>Jukebox Mode</h1>");
             this.playlist = new Playlist( null, { view: this });
+            _.bindAll(this);
+            var poller = Backbone.Poller.get(this.playlist, {
+                delay: this.pollFrequency
+            });
+            poller.on('success', this.songsAdded);
+            poller.start();
         },
-        events: {
-            "click #addSong":  "addSong"
+        songAdded: function (model, first) {
+            this.addToPlaylist(model, first);
+            $.ajax(this.playlist.url + '/pop?id=' + model.get('id'), {
+                type: 'POST',
+                async: false
+            });
         },
-        addSong: function (id) {
-            id = 33;
-            var song_model = new Song({ id: id });
-            this.playlist.add( song_model );
+        songsAdded: function(o){
+            var view = this;
+            var first =  window.Grooveshark.getCurrentSongStatus().status == 'none';
+            _.each(o.models, function(model){
+                view.songAdded(model, first);
+                first = false;
+            });
         },
-        songAdded: function (model) {
-            alert(model.get('id') + ' added!')
+
+        addToPlaylist: function(song, first){
+            window.Grooveshark.addSongsByID([song.get('song_id')], first);
         }
+//        songsReset: function(o){
+//            var view = this;
+//            this.goToEnd(function(){
+//                var first = window.Grooveshark.getCurrentSongStatus().status == 'none';
+//                _.each(o.models, function(model){
+//                    view.addToPlaylist(model, first);
+//                    first = false;
+//                });
+//            });
+//        },
+
+
+
+//        goToEnd: function(callback){
+//            if(window.Grooveshark.getCurrentSongStatus().status == 'none'){
+//                return callback();
+//            }
+//
+//            var timer = window.setInterval(
+//                function(){
+//                    if(window.Grooveshark.getNextSong() !== null){
+//                        window.Grooveshark.next();
+//                    }
+//                    else{
+//                        clearInterval(timer);
+//                        callback();
+//                    }
+//                }, 500
+//            );
+//        }
     });
 
     var appview = new AppView;
